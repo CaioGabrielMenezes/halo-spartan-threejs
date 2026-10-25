@@ -1,6 +1,12 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { buildScenery } from './scenery.js';
 
 const MODEL_URL = import.meta.env.BASE_URL + 'models/halo_mk_v_model.glb';
 // Se o personagem aparecer de costas, troque para Math.PI
@@ -21,26 +27,40 @@ document.body.appendChild(renderer.domElement);
 
 // Cena
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x3a4a5c);
-scene.fog = new THREE.Fog(0x3a4a5c, 10, 35);
+// Câmera inicial; o cenário do céu é montado de frente para ela
+const CAMERA_START = new THREE.Vector3(3, 1.5, 6);
+const scenery = buildScenery(scene, Math.atan2(CAMERA_START.x, CAMERA_START.z));
 
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(2.5, 1.8, 4);
+// Reflexos suaves para os metais (armadura e estruturas Forerunner)
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.5;
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 6000);
+camera.position.copy(CAMERA_START);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 1, 0);
+controls.target.set(0, 1.1, 0);
 controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.49; // não deixa a câmera ir para baixo do chão
+controls.maxDistance = 40;
 controls.update();
 
+// Brilho (bloom) nas luzes Forerunner
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.4, 0.4, 1));
+composer.addPass(new OutputPass());
+
 // Luzes
-scene.add(new THREE.HemisphereLight(0xdfeaff, 0x5a6470, 2));
+scene.add(new THREE.HemisphereLight(0xcfe4ff, 0x4f6a3a, 1.6));
 
 // Luz de preenchimento pela frente, para a armadura não ficar escura
 const fill = new THREE.DirectionalLight(0xdde8ff, 1.2);
 fill.position.set(-3, 3, 5);
 scene.add(fill);
 
-const sun = new THREE.DirectionalLight(0xffffff, 3);
+const sun = new THREE.DirectionalLight(0xfff1dc, 3);
 sun.position.set(3, 6, 4);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -49,20 +69,6 @@ sun.shadow.camera.right = 5;
 sun.shadow.camera.top = 5;
 sun.shadow.camera.bottom = -5;
 scene.add(sun);
-
-// Chão
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(50, 50),
-  new THREE.MeshStandardMaterial({ color: 0x4a5866, roughness: 0.9 })
-);
-ground.rotation.x = -Math.PI / 2;
-ground.receiveShadow = true;
-scene.add(ground);
-
-const grid = new THREE.GridHelper(50, 50, 0x6fcf7f, 0x5f7a66);
-grid.material.opacity = 0.35;
-grid.material.transparent = true;
-scene.add(grid);
 
 // ---------------------------------------------------------------------------
 // Ossos
@@ -428,6 +434,7 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
 });
 
 // Loop
@@ -435,8 +442,9 @@ const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const delta = clock.getDelta();
   if (mixer) mixer.update(delta);
+  scenery.update(clock.elapsedTime);
   controls.update();
-  renderer.render(scene, camera);
+  composer.render();
 });
 
 init();

@@ -1,6 +1,6 @@
 # Halo Spartan — Three.js
 
-Cena 3D feita com [Three.js](https://threejs.org/) mostrando a armadura Mk V do Halo com animações criadas no código.
+Cena 3D feita com [Three.js](https://threejs.org/) mostrando a armadura Mk V do Halo com animações criadas no código, numa plataforma Forerunner com o anel Halo no céu. O cenário é todo gerado no código.
 
 **Ver online:** https://caiogabrielmenezes.github.io/halo-spartan-threejs/
 
