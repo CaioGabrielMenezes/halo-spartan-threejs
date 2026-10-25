@@ -32,4 +32,3 @@ Depois abra o endereço que aparecer no terminal (normalmente http://localhost:5
 
 O modelo 3D é o [Halo Mk V Model](https://sketchfab.com/3d-models/halo-mk-v-model-ff8a4e4f9d1f4fdeb3a1d887f6f70dae), criado por [Pep0398](https://sketchfab.com/Pep0398) no Sketchfab e licenciado sob [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). As animações não vêm do modelo: foram feitas no código deste projeto.
 
-Halo é uma marca da Microsoft / Xbox Game Studios. Este é um projeto de fã, sem fins comerciais.
